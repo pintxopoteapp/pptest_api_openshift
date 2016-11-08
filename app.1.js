@@ -1,7 +1,6 @@
 // http://mongoosejs.com/docs/index.html
 
 // connection
-var GeoJSON = require('mongoose-geojson-schema');
 var mongoose = require('mongoose');
 var user = process.env.USER;
 var password = process.env.PASSWORD;
@@ -31,51 +30,12 @@ db.once('open', function callback() {
 
 // schema
 var barSchema = mongoose.Schema({
-  "geometry": {
-    "type": String,
-    "coordinates": []
-  },
-  "properties": {
-    "name": String,
-    "street":String
-     }
+    name: String,
+    calle: String
 },{ collection : 'bars' });
-
-var schema = new mongoose.Schema({
-    any: mongoose.Schema.Types.GeoJSON,
-    point: mongoose.Schema.Types.Point,
-  multipoint: mongoose.Schema.Types.MultiPoint,
-  linestring: mongoose.Schema.Types.LineString,
-  multilinestring: mongoose.Schema.Types.MultiLineString,
-  polygon: mongoose.Schema.Types.Polygon,
-  multipolygon: mongoose.Schema.Types.MultiPolygon,
-  geometry: mongoose.Schema.Types.Geometry,
-  geometrycollection: mongoose.Schema.Types.GeometryCollection,
-  feature: mongoose.Schema.Types.Feature,
-  featurecollection: mongoose.Schema.Types.FeatureCollection
-},{ collection : 'bars' });
-//************************** Schema for searching point in a range*****************
-var mongooseschema = new mongoose.Schema({
-  point: {
-    coordinates:[Number,Number]
-  }},{ collection : 'bars' });
-    //******   add a index to search in a sphere
-mongooseschema.index({ point: '2dsphere' });
-// "point": {
-//         "coordinates": [
-//             12.123456,
-//             13.134578
-//         ],
-//         "type": "Point"
-//     },
-// object created with a schema
-var A = mongoose.model('A', mongooseschema);
-//*********************** END of Schema for searching point in a range*****************
 
 // model
 var Bar = mongoose.model('bar', barSchema);
-var GeoBar=db.model('GeoJSON',schema);
-
 
 // remove all bars
 // http://mongoosejs.com/docs/api.html#query_Query-remove
@@ -126,59 +86,20 @@ app.get('/bars/add/:name', function(req, res){
 
 });
 
-app.get('/bars/add/:name/:street/:lat/:long', function(req, res){
-  var kitten = new Bar({ properties:{ name: req.params.name, street: req.params.street} , geometry:{type:"Point",coordinates:[req.params.lat,req.params.long]}});
-  var lat=req.params.lat;
-  console.log(lat);
-  // {
-//   "type": "Feature",
-//   "geometry": {
-//     "type": "Point",
-//     "coordinates": [125.6, 10.1]
-//   },
-//   "properties": {
-//     "name": "Dinagat Islands"
-//   }
-// }
-// var test=new GeoBar ({ point: {
-//       type: "Point",
-//       coordinates: [lat, 13.134578]
-//     }});
+app.get('/bars/add/:name/:street', function(req, res){
+  var kitten = new Bar({ name: req.params.name, street:req.params.street });
+  console.log(kitten.name); // 'Silence'
 
-db.on('open', function () {
-  A.on('index', function (err) {
-    if (err) return done(err);
-    A.create({ loc: { type: 'Point', coordinates: [ 43.32402,-1.985839] }}, function (err) {
-      if (err) return done(err);
-      A.find({ loc: { $near: { type: 'Point', coordinates:[43.32402,-1.985839] }}}, function (err, docs) {
-        if (err) return done(err);
-        console.log(docs);
-        done();
-      })
-    })
-  })
-});
-function done (err) {
-  if (err) console.error(err.stack);
-  mongoose.connection.db.dropDatabase(function () {
-    mongoose.connection.close();
+  kitten.save(function (err, kittenadded, numberAffected) {
+    if (err) {
+      console.error(err);
+      res.send('Error');
+    } else {
+      console.log('bars created:');
+      console.log(kittenadded);
+      res.json(kittenadded);
+    }
   });
-}
-
-
-  console.log(kitten);
-  //kitten.createIndex( {"loc" : "2dsphere" } )
- // test.save();
-  // test.save(function (err, kittenadded, numberAffected) {
-  //   if (err) {
-  //     console.error(err);
-  //     res.send('Error');
-  //   } else {
-  //     console.log('bars created:');
-  //     console.log(kittenadded);
-  //     res.json(kittenadded);
-  //   }
-  // });
 
 });
 //funciona
@@ -217,51 +138,6 @@ app.get('/bars/find/:name', function(req, res){
 
 });
 
-app.get('/bars/findwithradius/:lat/:long/:radian', function(req, res){
-     var _lat=parseFloat(req.params.lat);
-   var _long=parseFloat(req.params.long);
-    var _radian=req.params.radian;
-//     var _R=6371;//radius of the earth 
-//     console.log("lat :"+_lat);
-//         console.log("lat :"+_long);
-//     // Converts from degrees to radians.
-// Math.radians = function(degrees) {
-// return degrees * Math.PI / 180;
-// };
-
-// // Converts from radians to degrees.
-// Math.degrees = function(radians) {
-// return radians * 180 / Math.PI;
-// };
-// var maxLat = _lat + Math.degrees(_radian/_R);
-// var minLat = _lat - Math.degrees(_radian/_R);
-// var maxLon = _long + Math.degrees(Math.asin(_radian/_R) / Math.cos(Math.degrees(_lat)));
-// var minLon = _long - Math.degrees(Math.asin(_radian/_R) / Math.cos(Math.degrees(_lat)));
-//     console.log(maxLat,minLat,maxLon,minLon);
-    
-    A.find(
-   { point:
-      { $near : 
-          {
-            $geometry : {
-               type : "Point" ,
-               //coordinates : [43.319564, -1.983380] },
-               coordinates:[_lat, _long]},
-            $maxDistance : _radian
-          }
-      }
-  }, function (err, kittens){
-    if (err) {
-        console.error(err);
-        res.send('Error');
-      } else {
-        console.log('Find points:');
-        console.log(kittens);
-        res.json(kittens);
-              }
-      });
-
-    });
 app.get('/bars/findagelte/:val', function(req, res){
     // $lte selects the documents where the value of the field is less than or equal to (i.e. <=) the specified value.
     // https://docs.mongodb.org/manual/reference/operator/query/lte/#op._S_lte

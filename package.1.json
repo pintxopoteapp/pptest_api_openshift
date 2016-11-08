@@ -3,11 +3,9 @@
   "description": "mongoose-getting-started",
   "version": "0.0.1",
   "dependencies": {
-    "async": "0.2.10",
     "express": "^4.14.0",
-    "mongoose": "^4.3.7",
-    "mongoose-geojson-schema": "^2.1.2"
+    "mongoose": "^4.3.7"
   },
-  "private": true,
+   "private": true,
   "main": "app.js"
 }
